@@ -8,6 +8,7 @@ use App\User;
 use App\Role;
 use App\Photo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 use App\Http\Requests;
 
@@ -45,28 +46,42 @@ class AdminUsersController extends Controller
     public function store(UsersRequest $request)
     {
 
-        $if(trim($request->password)==''){
-          $input=$request->except('password');
-        }else{
+      if(trim($request->password) == ''){
 
-          $input=$request->all();
-          $input['password'] = bcrypt($request->password);
+    $input = $request->except('password');
 
-        }
+} else{
 
-        if($file = $request->file('photo_id')){
-          $name = time() . $file->getClientOriginalName();
-          $file->move('images', $name);
-          $photo = Photo::create(['file'=>$name]);
-          $input['photo_id'] = $photo->id;
-        }
 
-        $input['password'] = bcrypt($request->password);
+    $input = $request->all();
 
-        User::create($input);
+    $input['password'] = bcrypt($request->password);
 
-        return redirect('/admin/users');
+}
 
+
+
+if($file = $request->file('photo_id')) {
+
+
+    $name = time() . $file->getClientOriginalName();
+
+
+    $file->move('images', $name);
+
+    $photo = Photo::create(['file'=>$name]);
+
+
+    $input['photo_id'] = $photo->id;
+
+
+}
+
+
+User::create($input);
+
+
+return redirect('/admin/users');
     }
 
     /**
@@ -108,16 +123,17 @@ class AdminUsersController extends Controller
         //
         $user=User::findOrFail($id);
 
-        $if(trim($request->password)==''){
-          $input=$request->except('password');
-        }else{
+        if(trim($request->password =='')){
+          $input = $request->except('password');
+        }
+        else{
 
           $input=$request->all();
           $input['password'] = bcrypt($request->password);
 
         }
 
-      
+
 
         if($file = $request->file('photo_id')){
           $name = time() . $file->getClientOriginalName();
@@ -141,6 +157,14 @@ class AdminUsersController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $user = User::findOrFail($id);
+
+        unlink(public_path() . $user->photo->file);
+
+        $user->delete();
+
+        Session::flash('deleted_user', 'The user has been deleted');
+
+        return redirect('/admin/users');
     }
 }
